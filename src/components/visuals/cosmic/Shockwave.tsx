@@ -28,9 +28,6 @@ export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<Exp
     if (phase === 'exploding') {
       uniforms.uProgress.value = p
       uniforms.uOpacity.value = 1
-    } else if (phase === 'rewinding') {
-      uniforms.uProgress.value = p
-      uniforms.uOpacity.value = 0.45
     } else {
       uniforms.uOpacity.value = 0
     }

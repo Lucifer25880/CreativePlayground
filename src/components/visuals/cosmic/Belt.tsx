@@ -8,8 +8,6 @@ import { useCosmicStore, type ExplosionState } from '@/stores/cosmicStore'
 const TAU = Math.PI * 2
 const BELT_RADIUS = 8.6
 const EXPLODE_DURATION = 1.9
-const REWIND_DURATION = 2.6
-const MAX_OFFSET = 26
 
 export function Belt({
   scrollRef,
@@ -31,20 +29,16 @@ export function Belt({
     const store = useCosmicStore.getState()
     const ref = explosionRef.current
 
-    // Drive the explode/rewind progress and hand phase transitions back to the store.
     if (store.phase === 'exploding') {
       ref.progress = Math.min(1, ref.progress + delta / EXPLODE_DURATION)
       if (ref.progress >= 1) store.setPhase('exploded')
-    } else if (store.phase === 'rewinding') {
-      ref.progress = Math.max(0, ref.progress - delta / REWIND_DURATION)
-      if (ref.progress <= 0) store.setPhase('idle')
-    } else if (store.phase === 'exploded') {
+    } else if (store.phase === 'exploded' || store.phase === 'rewinding') {
       ref.progress = 1
     } else {
       ref.progress = 0
     }
 
-    // The belt only spins while idle; freeze it during explode / rewind.
+    // The belt only spins while idle; freeze it during explode / glitch-restore.
     if (store.phase === 'idle') {
       const drift = reduceRef.current ? 0 : state.clock.elapsedTime * 0.018
       const target = scrollRef.current * TAU * 1.4 + drift
@@ -52,7 +46,6 @@ export function Belt({
     }
 
     const p = ref.progress
-    const eased = p * p
     const n = PLANETS.length
     for (let i = 0; i < n; i++) {
       const el = wrappers.current[i]
@@ -61,21 +54,16 @@ export function Belt({
       const dx = Math.cos(angle)
       const dz = Math.sin(angle)
 
-      let offset = 0
       let scale = 1
-
-      if (store.phase === 'exploding' || store.phase === 'exploded') {
-        // Shatter in place: the planet vanishes almost instantly as its fragments burst out.
-        offset = 0
+      if (store.phase === 'exploding') {
+        // Shatter in place: the planet vanishes almost instantly.
         scale = Math.max(0, 1 - p / 0.08)
-        if (store.phase === 'exploded') scale = 0
-      } else if (store.phase === 'rewinding') {
-        offset = eased * MAX_OFFSET
-        scale = 1 - p
+      } else if (store.phase === 'exploded' || store.phase === 'rewinding') {
+        scale = 0
       }
 
-      // Compensate the wrapper scale so the planet sits at orbit radius + offset.
-      const dist = offset + (1 - Math.max(0, scale)) * BELT_RADIUS
+      // Compensate the wrapper scale so the planet stays at its orbit radius.
+      const dist = (1 - Math.max(0, scale)) * BELT_RADIUS
       el.position.set(dx * dist, 0, dz * dist)
       el.scale.setScalar(Math.max(0, scale))
     }

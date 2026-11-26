@@ -7,6 +7,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { Icon, type IconName } from '@/components/common/Icon'
 import { CosmicBackground } from '@/components/visuals/CosmicBackground'
 import { ExplosionButton } from '@/components/visuals/ExplosionButton'
+import { GlitchOverlay } from '@/components/visuals/GlitchOverlay'
 import { useInView } from '@/hooks/useInView'
 import { useCosmicStore } from '@/stores/cosmicStore'
 
@@ -49,6 +50,14 @@ export default function Home() {
     if (phase === 'exploding' || phase === 'exploded') {
       setFlash(true)
       const t = setTimeout(() => setFlash(false), 90)
+      return () => clearTimeout(t)
+    }
+  }, [phase])
+
+  // On rewind: flicker like a lost signal, then snap everything back instantly.
+  useEffect(() => {
+    if (phase === 'rewinding') {
+      const t = setTimeout(() => useCosmicStore.getState().setPhase('idle'), 750)
       return () => clearTimeout(t)
     }
   }, [phase])
@@ -220,6 +229,8 @@ export default function Home() {
           flash ? 'opacity-60 duration-0' : 'opacity-0 duration-700'
         }`}
       />
+      {/* Signal-loss glitch while restoring */}
+      <GlitchOverlay active={phase === 'rewinding'} />
       {/* Small icon-only detonator (bottom-left) */}
       <div className="fixed bottom-6 left-6 z-[60]">
         <ExplosionButton onExplode={handleExplode} onRewind={handleRewind} arming={arming} />
