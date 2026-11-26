@@ -9,6 +9,7 @@ import { Starfield } from './cosmic/Starfield'
 import { Nebula } from './cosmic/Nebula'
 import { Belt } from './cosmic/Belt'
 import { Debris } from './cosmic/Debris'
+import { Fragments } from './cosmic/Fragments'
 import { Shockwave } from './cosmic/Shockwave'
 
 function CameraShake({ explosionRef }: { explosionRef: MutableRefObject<ExplosionState> }) {
@@ -46,7 +47,7 @@ function Scene({
   beltRef: MutableRefObject<THREE.Group | null>
 }) {
   const phase = useCosmicStore((s) => s.phase)
-  const bloomIntensity = phase === 'exploding' ? 2.0 : phase === 'rewinding' ? 1.4 : 1.05
+  const bloomIntensity = phase === 'exploding' ? 2.6 : phase === 'rewinding' ? 1.5 : 1.05
 
   return (
     <>
@@ -55,6 +56,7 @@ function Scene({
       <Nebula />
       <Belt scrollRef={scrollRef} reduceRef={reduceRef} explosionRef={explosionRef} beltRef={beltRef} />
       <Debris explosionRef={explosionRef} beltRef={beltRef} />
+      <Fragments explosionRef={explosionRef} beltRef={beltRef} />
       <Shockwave explosionRef={explosionRef} />
       <CameraShake explosionRef={explosionRef} />
       <EffectComposer multisampling={2}>

@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { listExperiments, getExperiment, getExperimentComponents } from '@/experiments/registry/registry'
@@ -8,6 +8,7 @@ import { Icon, type IconName } from '@/components/common/Icon'
 import { CosmicBackground } from '@/components/visuals/CosmicBackground'
 import { ExplosionButton } from '@/components/visuals/ExplosionButton'
 import { useInView } from '@/hooks/useInView'
+import { useCosmicStore } from '@/stores/cosmicStore'
 
 
 
@@ -28,11 +29,33 @@ const FLOW: { icon: IconName; label: string; desc: string }[] = [
 
 export default function Home() {
   const featured = listExperiments().slice(0, 4)
+  const phase = useCosmicStore((s) => s.phase)
+  const [contentVisible, setContentVisible] = useState(true)
+  const [flash, setFlash] = useState(false)
+
+  // Hide the page content during explode / rewind; restore 1s after rewind finishes.
+  useEffect(() => {
+    if (phase === 'exploding' || phase === 'rewinding') {
+      setContentVisible(false)
+    } else if (phase === 'idle') {
+      const t = setTimeout(() => setContentVisible(true), 1000)
+      return () => clearTimeout(t)
+    }
+  }, [phase])
+
+  // Brief full-screen white flash at the moment of detonation.
+  useEffect(() => {
+    if (phase === 'exploding') {
+      setFlash(true)
+      const t = setTimeout(() => setFlash(false), 90)
+      return () => clearTimeout(t)
+    }
+  }, [phase])
 
   return (
     <div className="relative">
       <CosmicBackground />
-      <div className="relative z-10">
+      <div className={`relative z-10 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
         {/* HERO */}
         <section className="relative flex min-h-[92vh] items-center overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(7,7,13,0.94)_0%,rgba(7,7,13,0.72)_26%,rgba(7,7,13,0.28)_48%,rgba(7,7,13,0)_66%)]" />
@@ -81,7 +104,7 @@ export default function Home() {
           >
             <div className="relative mx-auto aspect-[4/3] max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-ink-900/60 shadow-panel">
               <div className="absolute inset-0">
-                <HeroVisual />
+                <HeroVisual hidden={!contentVisible} />
               </div>
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-xl border border-white/10 bg-ink-950/70 px-4 py-3 backdrop-blur">
                 <div>
@@ -174,21 +197,14 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* DETONATOR — page bottom */}
-      <section className="mx-auto max-w-7xl px-4 pb-28 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/10 via-ink-800 to-accent-cyan/10 p-10 text-center">
-          <div className="absolute inset-0 grid-bg opacity-30" />
-          <div className="relative">
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">引爆星环</h2>
-            <p className="mt-2 text-sm text-slate-400">把所有行星炸成璀璨碎片，或让它们从深空归来。</p>
-            <div className="mt-7 flex justify-center">
-              <ExplosionButton large />
-            </div>
-          </div>
-        </div>
-      </section>
       </div>
+      {/* Explosion screen flash */}
+      <div
+        className={`pointer-events-none fixed inset-0 z-[55] bg-white transition-opacity ${
+          flash ? 'opacity-50 duration-0' : 'opacity-0 duration-700'
+        }`}
+      />
+      {/* Small icon-only detonator */}
       <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2">
         <ExplosionButton />
       </div>
@@ -196,11 +212,11 @@ export default function Home() {
   )
 }
 
-function HeroVisual() {
+function HeroVisual({ hidden }: { hidden?: boolean }) {
   const { ref, inView } = useInView<HTMLDivElement>()
   return (
     <div ref={ref} className="h-full w-full">
-      {inView ? <HeroPreview /> : null}
+      {!hidden && inView ? <HeroPreview /> : null}
     </div>
   )
 }
