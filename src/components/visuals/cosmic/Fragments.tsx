@@ -9,6 +9,38 @@ const TOTAL = PLANETS.length * PER_PLANET
 const BELT_RADIUS = 8.6
 const TAU = Math.PI * 2
 
+/** Deterministic 0..1 hash so duplicated (shared) vertices displace identically. */
+function hash3(x: number, y: number, z: number, seed: number): number {
+  const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + seed * 17.3) * 43758.5453
+  return s - Math.floor(s)
+}
+
+/** Turn a regular polyhedron into a jagged, natural-looking rock. */
+function makeRockGeometry(seed: number): THREE.BufferGeometry {
+  const geo = new THREE.IcosahedronGeometry(1, 1)
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  const v = new THREE.Vector3()
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i)
+    const vx = v.x
+    const vy = v.y
+    const vz = v.z
+    const h1 = hash3(vx, vy, vz, seed)
+    const h2 = hash3(vy, vz, vx, seed + 11.1)
+    const h3 = hash3(vz, vx, vy, seed + 23.3)
+    const radial = 0.72 + h1 * 0.55
+    v.set(
+      vx * radial + (h2 - 0.5) * 0.34,
+      vy * radial + (h3 - 0.5) * 0.34,
+      vz * radial + (h1 - 0.5) * 0.34,
+    )
+    pos.setXYZ(i, v.x, v.y, v.z)
+  }
+  pos.needsUpdate = true
+  geo.computeVertexNormals()
+  return geo
+}
+
 /**
  * Large, lit, tumbling planet shards.
  * - Spawn on each planet's shell so the planet visibly breaks apart into chunks.
@@ -25,9 +57,15 @@ export function Fragments({
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const phase = useCosmicStore((s) => s.phase)
 
-  const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 0), [])
+  const geometry = useMemo(() => makeRockGeometry(3.7), [])
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0.14, flatShading: true }),
+    () =>
+      new THREE.MeshStandardMaterial({
+        roughness: 0.85,
+        metalness: 0.12,
+        flatShading: true,
+        side: THREE.DoubleSide,
+      }),
     [],
   )
   const dummy = useMemo(() => new THREE.Object3D(), [])
@@ -103,7 +141,7 @@ export function Fragments({
           st.rotVel[i * 3 + 1] = (Math.random() - 0.5) * 4
           st.rotVel[i * 3 + 2] = (Math.random() - 0.5) * 4
 
-          const base = spec.radius * (0.1 + Math.random() * 0.2)
+          const base = spec.radius * (0.14 + Math.random() * 0.28)
           st.scale[i * 3] = base * (0.6 + Math.random() * 0.9)
           st.scale[i * 3 + 1] = base * (0.6 + Math.random() * 0.9)
           st.scale[i * 3 + 2] = base * (0.6 + Math.random() * 0.9)
