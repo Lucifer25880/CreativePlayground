@@ -11,6 +11,7 @@ import { Belt } from './cosmic/Belt'
 import { Debris } from './cosmic/Debris'
 import { Fragments } from './cosmic/Fragments'
 import { Shockwave } from './cosmic/Shockwave'
+import { SUN_DIR } from './cosmic/planets'
 
 function CameraShake({ explosionRef }: { explosionRef: MutableRefObject<ExplosionState> }) {
   const { camera } = useThree()
@@ -35,6 +36,23 @@ function CameraShake({ explosionRef }: { explosionRef: MutableRefObject<Explosio
   return null
 }
 
+function FireLight({ explosionRef }: { explosionRef: MutableRefObject<ExplosionState> }) {
+  const light = useRef<THREE.PointLight>(null)
+  const phase = useCosmicStore((s) => s.phase)
+
+  useFrame(() => {
+    if (!light.current) return
+    if (phase === 'exploding') {
+      const p = explosionRef.current.progress
+      light.current.intensity = Math.max(0, 1 - p * 1.5) * 60
+    } else {
+      light.current.intensity = 0
+    }
+  })
+
+  return <pointLight ref={light} color="#ff7a2a" distance={45} intensity={0} />
+}
+
 function Scene({
   scrollRef,
   reduceRef,
@@ -52,6 +70,13 @@ function Scene({
   return (
     <>
       <color attach="background" args={['#05050a']} />
+      <ambientLight intensity={0.35} color="#6f86ff" />
+      <directionalLight
+        position={[SUN_DIR.x * 24, SUN_DIR.y * 24, SUN_DIR.z * 24]}
+        intensity={2.6}
+        color="#fff2dc"
+      />
+      <FireLight explosionRef={explosionRef} />
       <Starfield reduceRef={reduceRef} count={1500} />
       <Nebula />
       <Belt scrollRef={scrollRef} reduceRef={reduceRef} explosionRef={explosionRef} beltRef={beltRef} />

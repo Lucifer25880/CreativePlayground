@@ -65,17 +65,18 @@ export function Belt({
       let scale = 1
 
       if (store.phase === 'exploding' || store.phase === 'exploded') {
-        offset = eased * MAX_OFFSET
-        if (p < 0.3) scale = 1 + (p / 0.3) * 0.5
-        else if (p < 0.7) scale = 1.5 * (1 - (p - 0.3) / 0.4)
-        else scale = 0
+        // Shatter in place: the planet vanishes almost instantly as its fragments burst out.
+        offset = 0
+        scale = Math.max(0, 1 - p / 0.08)
         if (store.phase === 'exploded') scale = 0
       } else if (store.phase === 'rewinding') {
         offset = eased * MAX_OFFSET
         scale = 1 - p
       }
 
-      el.position.set(dx * offset, 0, dz * offset)
+      // Compensate the wrapper scale so the planet sits at orbit radius + offset.
+      const dist = offset + (1 - Math.max(0, scale)) * BELT_RADIUS
+      el.position.set(dx * dist, 0, dz * dist)
       el.scale.setScalar(Math.max(0, scale))
     }
   })

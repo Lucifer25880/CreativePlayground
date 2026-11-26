@@ -38,7 +38,7 @@ export function Debris({
   const material = useMemo(
     () =>
       new THREE.PointsMaterial({
-        size: 0.17,
+        size: 0.13,
         sizeAttenuation: true,
         vertexColors: true,
         transparent: true,
@@ -55,28 +55,34 @@ export function Debris({
       const c = new THREE.Color()
       for (let i = 0; i < COUNT; i++) {
         const pi = Math.floor(Math.random() * PLANETS.length)
+        const spec = PLANETS[pi]
         const angle = rot + Math.PI / 2 + (pi / PLANETS.length) * TAU
-        const ox = Math.cos(angle) * BELT_RADIUS
-        const oz = Math.sin(angle) * BELT_RADIUS
-        const jitter = () => (Math.random() - 0.5) * 1.7
+        const cx = Math.cos(angle) * BELT_RADIUS
+        const cz = Math.sin(angle) * BELT_RADIUS
 
-        st.pos[i * 3] = ox + jitter()
-        st.pos[i * 3 + 1] = jitter() * 0.8
-        st.pos[i * 3 + 2] = oz + jitter()
+        // burst from the planet's shell
+        const theta = Math.random() * TAU
+        const phi = Math.acos(2 * Math.random() - 1)
+        const nx = Math.sin(phi) * Math.cos(theta)
+        const ny = Math.cos(phi)
+        const nz = Math.sin(phi) * Math.sin(theta)
+        const rr = spec.radius * (0.55 + Math.random() * 0.7)
 
-        const len = Math.hypot(ox, oz) || 1
-        const outX = ox / len
-        const outZ = oz / len
+        st.pos[i * 3] = cx + nx * rr
+        st.pos[i * 3 + 1] = ny * rr
+        st.pos[i * 3 + 2] = cz + nz * rr
+
         const speed = 2 + Math.random() * 9
-        st.vel[i * 3] = outX * speed + (Math.random() - 0.5) * 3
-        st.vel[i * 3 + 1] = (Math.random() - 0.35) * speed
-        st.vel[i * 3 + 2] = outZ * speed + (Math.random() - 0.5) * 3
+        st.vel[i * 3] = (nx * 0.9 + (Math.random() - 0.5) * 0.6) * speed
+        st.vel[i * 3 + 1] = (ny * 0.9 + (Math.random() - 0.5) * 0.6) * speed
+        st.vel[i * 3 + 2] = (nz * 0.9 + (Math.random() - 0.5) * 0.6) * speed
 
-        st.maxLife[i] = 1.5 + Math.random() * 1.4
+        st.maxLife[i] = 1.4 + Math.random() * 1.2
         st.life[i] = st.maxLife[i]
 
-        const hue = Math.random() < 0.5 ? 0.07 + Math.random() * 0.07 : 0.52 + Math.random() * 0.2
-        c.setHSL(hue, 0.9, 0.62)
+        // fire palette: deep red → orange → yellow
+        const hue = 0.01 + Math.random() * 0.11
+        c.setHSL(hue, 1.0, 0.55 + Math.random() * 0.2)
         st.base[i * 3] = c.r
         st.base[i * 3 + 1] = c.g
         st.base[i * 3 + 2] = c.b

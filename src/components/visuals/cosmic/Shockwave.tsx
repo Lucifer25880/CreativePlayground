@@ -62,7 +62,7 @@ export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<Exp
         <ringGeometry args={[0.85, 1, 96]} />
         <meshBasicMaterial
           ref={ring1Mat}
-          color="#ffd9a0"
+          color="#ffb14a"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}
@@ -74,7 +74,7 @@ export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<Exp
         <ringGeometry args={[0.85, 1, 96]} />
         <meshBasicMaterial
           ref={ring2Mat}
-          color="#8fb4ff"
+          color="#ff6a2a"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}
@@ -86,7 +86,7 @@ export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<Exp
         <sphereGeometry args={[1, 24, 24]} />
         <meshBasicMaterial
           ref={coreMat}
-          color="#fff6e0"
+          color="#ff8a3a"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}

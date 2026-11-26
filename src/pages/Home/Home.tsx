@@ -32,18 +32,19 @@ export default function Home() {
   const phase = useCosmicStore((s) => s.phase)
   const [contentVisible, setContentVisible] = useState(true)
   const [flash, setFlash] = useState(false)
+  const [arming, setArming] = useState(false)
 
-  // Hide the page content during explode / rewind; restore 1s after rewind finishes.
+  // Hide content during explode / rewind; restore 1s after rewind finishes.
   useEffect(() => {
     if (phase === 'exploding' || phase === 'rewinding') {
       setContentVisible(false)
-    } else if (phase === 'idle') {
+    } else if (phase === 'idle' && !arming) {
       const t = setTimeout(() => setContentVisible(true), 1000)
       return () => clearTimeout(t)
     }
-  }, [phase])
+  }, [phase, arming])
 
-  // Brief full-screen white flash at the moment of detonation.
+  // Brief warm fire flash at the moment of detonation.
   useEffect(() => {
     if (phase === 'exploding') {
       setFlash(true)
@@ -51,6 +52,21 @@ export default function Home() {
       return () => clearTimeout(t)
     }
   }, [phase])
+
+  // Fade the content out FIRST, then detonate so nothing blocks the explosion.
+  const handleExplode = () => {
+    if (arming || phase !== 'idle') return
+    setContentVisible(false)
+    setArming(true)
+    setTimeout(() => {
+      useCosmicStore.getState().explode()
+      setArming(false)
+    }, 600)
+  }
+
+  const handleRewind = () => {
+    useCosmicStore.getState().rewind()
+  }
 
   return (
     <div className="relative">
@@ -198,15 +214,15 @@ export default function Home() {
         </div>
       </section>
       </div>
-      {/* Explosion screen flash */}
+      {/* Explosion fire flash */}
       <div
-        className={`pointer-events-none fixed inset-0 z-[55] bg-white transition-opacity ${
-          flash ? 'opacity-50 duration-0' : 'opacity-0 duration-700'
+        className={`pointer-events-none fixed inset-0 z-[55] bg-[#ff9a4a] transition-opacity ${
+          flash ? 'opacity-60 duration-0' : 'opacity-0 duration-700'
         }`}
       />
-      {/* Small icon-only detonator */}
-      <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2">
-        <ExplosionButton />
+      {/* Small icon-only detonator (bottom-left) */}
+      <div className="fixed bottom-6 left-6 z-[60]">
+        <ExplosionButton onExplode={handleExplode} onRewind={handleRewind} arming={arming} />
       </div>
     </div>
   )
