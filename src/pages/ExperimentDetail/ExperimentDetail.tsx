@@ -10,10 +10,12 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { DifficultyBadge, TagChip, CategoryBadge } from '@/components/common/Badges'
 import { ExperimentCard } from '@/components/cards/ExperimentCard'
 import { Icon } from '@/components/common/Icon'
+import { useBack } from '@/hooks/useBack'
 
 export default function ExperimentDetail() {
   const { experimentId } = useParams()
   const navigate = useNavigate()
+  const back = useBack('/explore')
   const experiment = experimentId ? getExperiment(experimentId) : undefined
   const isFav = usePreferencesStore((s) => (experiment ? s.favoriteExperiments.includes(experiment.id) : false))
   const toggleFav = usePreferencesStore((s) => s.toggleFavoriteExperiment)
@@ -43,14 +45,37 @@ export default function ExperimentDetail() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <Link to="/explore" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white">
-        <Icon name="arrow-left" size={15} /> Back to Explore
-      </Link>
+      <button
+        onClick={back}
+        className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+      >
+        <Icon name="arrow-left" size={15} /> Back
+      </button>
+
+      {/* Title header — kept OUTSIDE the preview so it never overlaps the
+          experiment's own bottom controls (input bars, toolbars, timelines). */}
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">{experiment.name}</h1>
+          <p className="mt-1 text-sm text-slate-400">{category?.name}</p>
+        </div>
+        <button
+          onClick={() => toggleFav(experiment.id)}
+          className={`rounded-xl border border-white/10 bg-ink-900/60 p-2.5 ${
+            isFav ? 'text-accent-pink' : 'text-slate-400'
+          }`}
+          aria-label="Toggle favorite"
+        >
+          <Icon name={isFav ? 'heart-filled' : 'heart'} size={18} />
+        </button>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        {/* Hero preview */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-ink-900">
-          <div className="aspect-[16/10]">
+        {/* Hero preview — live renderer. `relative` + `overflow-hidden` are
+            REQUIRED: experiments render with position:absolute; inset:0 and
+            would otherwise escape this card and cover the whole page. */}
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-ink-900">
+          <div className="relative aspect-[16/10] overflow-hidden">
             {components ? (
               <ErrorBoundary>
                 <Suspense fallback={<PreviewFallback />}>
@@ -60,22 +85,6 @@ export default function ExperimentDetail() {
             ) : (
               <PreviewFallback />
             )}
-          </div>
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink-950/80 to-transparent p-4">
-            <div className="flex items-end justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-white">{experiment.name}</h1>
-                <p className="text-sm text-slate-300">{category?.name}</p>
-              </div>
-              <button
-                onClick={() => toggleFav(experiment.id)}
-                className={`rounded-xl border border-white/10 bg-ink-950/60 p-2.5 backdrop-blur ${
-                  isFav ? 'text-accent-pink' : 'text-slate-400'
-                }`}
-              >
-                <Icon name={isFav ? 'heart-filled' : 'heart'} size={18} />
-              </button>
-            </div>
           </div>
         </div>
 

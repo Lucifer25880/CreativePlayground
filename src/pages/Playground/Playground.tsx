@@ -14,11 +14,13 @@ import { toast } from '@/components/common/Toast'
 import { downloadJson, readFileAsText } from '@/utils/download'
 import { diffConfig } from '@/utils/config'
 import { Icon } from '@/components/common/Icon'
+import { useBack } from '@/hooks/useBack'
 import type { ConfigValue, ExperimentConfig } from '@/types/config'
 
 export default function Playground() {
   const { experimentId } = useParams()
   const navigate = useNavigate()
+  const back = useBack('/playground')
   const experiment = experimentId ? getExperiment(experimentId) : undefined
   const components = experiment ? getExperimentComponents(experiment.id) : null
 
@@ -141,15 +143,15 @@ export default function Playground() {
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] bg-ink-900/80 px-3 backdrop-blur">
         <div className="flex min-w-0 items-center gap-2">
-          <Link to={`/explore/${experiment.id}`} className="btn-ghost !px-2.5 !py-1.5" title="Back">
+          <button onClick={back} className="btn-ghost !px-2.5 !py-1.5" title="Back">
             <Icon name="arrow-left" size={16} />
-          </Link>
+          </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-sm font-semibold text-white">{experiment.name}</h1>
               {dirty && <span className="h-1.5 w-1.5 shrink-0 animate-pulse-soft rounded-full bg-accent-amber" title="Unsaved changes" />}
             </div>
-            <div className="truncate text-[11px] text-slate-500">Live Playground · {experiment.id}</div>
+            <div className="truncate text-[11px] text-slate-500">Live Playground · {experiment.id} · {experiment.rendererType}</div>
           </div>
         </div>
 
@@ -228,9 +230,6 @@ export default function Playground() {
           ) : (
             <CanvasFallback />
           )}
-          <div className="pointer-events-none absolute bottom-3 right-3 rounded-lg border border-white/10 bg-ink-950/60 px-2.5 py-1 text-[10px] text-slate-500 backdrop-blur">
-            {experiment.rendererType} · live
-          </div>
         </main>
       </div>
 

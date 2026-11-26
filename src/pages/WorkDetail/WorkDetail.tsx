@@ -10,10 +10,12 @@ import { toast } from '@/components/common/Toast'
 import { downloadJson } from '@/utils/download'
 import { formatDate } from '@/utils/format'
 import { Icon } from '@/components/common/Icon'
+import { useBack } from '@/hooks/useBack'
 
 export default function WorkDetail() {
   const { workId } = useParams()
   const navigate = useNavigate()
+  const back = useBack('/works')
   const refresh = useWorkStore((s) => s.refresh)
   const [work, setWork] = useState(() => (workId ? workService.get(workId) : null))
   const [editing, setEditing] = useState(false)
@@ -63,14 +65,17 @@ export default function WorkDetail() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <Link to="/works" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white">
-        <Icon name="arrow-left" size={15} /> My Works
-      </Link>
+      <button
+        onClick={back}
+        className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+      >
+        <Icon name="arrow-left" size={15} /> Back
+      </button>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {/* cover */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-ink-900">
-          <div className="aspect-[16/10]">
+          <div className="relative aspect-[16/10] overflow-hidden">
             {experiment ? (
               <Cover experimentId={work.sourceExperimentId!} />
             ) : (

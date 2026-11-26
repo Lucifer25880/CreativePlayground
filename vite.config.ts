@@ -13,6 +13,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     chunkSizeWarningLimit: 1500,
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -25,7 +26,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5175,
+    port: 5176,
     host: true,
   },
 })

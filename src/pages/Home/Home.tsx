@@ -1,62 +1,14 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { listExperiments, getExperiment, getExperimentComponents } from '@/experiments/registry/registry'
 import { ExperimentCard } from '@/components/cards/ExperimentCard'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { Icon, type IconName } from '@/components/common/Icon'
+import { CosmicBackground } from '@/components/visuals/CosmicBackground'
+import { useInView } from '@/hooks/useInView'
 
-function HeroParticles() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    let raf = 0
-    let w = 0
-    let h = 0
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const particles = Array.from({ length: 90 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      r: Math.random() * 1.6 + 0.4,
-      vx: (Math.random() - 0.5) * 0.0004,
-      vy: (Math.random() - 0.5) * 0.0004,
-      hue: Math.random() > 0.5 ? 250 : 190,
-    }))
-    const resize = () => {
-      w = canvas.clientWidth
-      h = canvas.clientHeight
-      canvas.width = w * dpr
-      canvas.height = h * dpr
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
-    resize()
-    const ro = new ResizeObserver(resize)
-    ro.observe(canvas)
-    const tick = () => {
-      ctx.clearRect(0, 0, w, h)
-      for (const p of particles) {
-        p.x += p.vx
-        p.y += p.vy
-        if (p.x < 0 || p.x > 1) p.vx *= -1
-        if (p.y < 0 || p.y > 1) p.vy *= -1
-        ctx.beginPath()
-        ctx.arc(p.x * w, p.y * h, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${p.hue}, 90%, 70%, 0.5)`
-        ctx.fill()
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
-    }
-  }, [])
-  return <canvas ref={ref} className="absolute inset-0 h-full w-full" />
-}
+
 
 const FEATURES: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'flask', title: 'Live Playground', desc: '实时调整参数，立即看到渲染结果变化。' },
@@ -77,14 +29,12 @@ export default function Home() {
   const featured = listExperiments().slice(0, 4)
 
   return (
-    <div className="overflow-hidden">
-      {/* HERO */}
-      <section className="relative flex min-h-[92vh] items-center overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-60" />
-        <HeroParticles />
-        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-accent/20 blur-[120px]" />
-        <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-accent-cyan/15 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent-pink/10 blur-[120px]" />
+    <div className="relative overflow-hidden">
+      <CosmicBackground />
+      <div className="relative z-10">
+        {/* HERO */}
+        <section className="relative flex min-h-[92vh] items-center overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(7,7,13,0.94)_0%,rgba(7,7,13,0.72)_26%,rgba(7,7,13,0.28)_48%,rgba(7,7,13,0)_66%)]" />
 
         <div className="relative mx-auto grid w-full max-w-7xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:items-center">
           <motion.div
@@ -130,7 +80,7 @@ export default function Home() {
           >
             <div className="relative mx-auto aspect-[4/3] max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-ink-900/60 shadow-panel">
               <div className="absolute inset-0">
-                <HeroPreview />
+                <HeroVisual />
               </div>
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-xl border border-white/10 bg-ink-950/70 px-4 py-3 backdrop-blur">
                 <div>
@@ -223,6 +173,16 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </div>
+    </div>
+  )
+}
+
+function HeroVisual() {
+  const { ref, inView } = useInView<HTMLDivElement>()
+  return (
+    <div ref={ref} className="h-full w-full">
+      {inView ? <HeroPreview /> : null}
     </div>
   )
 }

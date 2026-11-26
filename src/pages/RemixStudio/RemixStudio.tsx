@@ -12,11 +12,13 @@ import { Modal } from '@/components/common/Modal'
 import { toast } from '@/components/common/Toast'
 import { diffConfig } from '@/utils/config'
 import { Icon } from '@/components/common/Icon'
+import { useBack } from '@/hooks/useBack'
 import type { ConfigValue, ExperimentConfig } from '@/types/config'
 
 export default function RemixStudio() {
   const { remixId } = useParams()
   const navigate = useNavigate()
+  const back = useBack('/studio')
   const [remix, setRemix] = useState(() => (remixId ? remixService.get(remixId) : null))
   const [config, setConfig] = useState<ExperimentConfig>(() => (remixId ? remixService.get(remixId)?.config ?? {} : {}))
   const [title, setTitle] = useState(() => remixService.get(remixId ?? '')?.title ?? '')
@@ -93,9 +95,9 @@ export default function RemixStudio() {
     <div className="flex h-full flex-col">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] bg-ink-900/80 px-3 backdrop-blur">
         <div className="flex min-w-0 items-center gap-2">
-          <Link to="/studio" className="btn-ghost !px-2.5 !py-1.5">
+          <button onClick={back} className="btn-ghost !px-2.5 !py-1.5">
             <Icon name="arrow-left" size={16} />
-          </Link>
+          </button>
           <div className="min-w-0">
             <input
               value={title}

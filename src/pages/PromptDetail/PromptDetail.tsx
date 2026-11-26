@@ -12,6 +12,7 @@ import { downloadText } from '@/utils/download'
 import { diffLines } from '@/utils/diff'
 import { timeAgo } from '@/utils/format'
 import { Icon } from '@/components/common/Icon'
+import { useBack } from '@/hooks/useBack'
 
 const MODE_LABEL: Record<string, string> = {
   full: '完整重新生成',
@@ -23,6 +24,7 @@ const MODE_LABEL: Record<string, string> = {
 export default function PromptDetail() {
   const { promptId } = useParams()
   const navigate = useNavigate()
+  const back = useBack('/prompts')
   const refresh = usePromptStore((s) => s.refresh)
   const [prompt, setPrompt] = useState(() => (promptId ? promptService.get(promptId) : null))
   const [editing, setEditing] = useState(false)
@@ -96,9 +98,12 @@ export default function PromptDetail() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <Link to="/prompts" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white">
-        <Icon name="arrow-left" size={15} /> Prompt Library
-      </Link>
+      <button
+        onClick={back}
+        className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
+      >
+        <Icon name="arrow-left" size={15} /> Back
+      </button>
 
       <div className="mt-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
