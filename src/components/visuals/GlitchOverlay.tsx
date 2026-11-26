@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * Subtle, LOCALISED CRT signal-lost glitch: a low-opacity dark static band with
- * a couple of thin scanlines near the centre — flashes a few times, then stops.
+ * Full-screen CRT signal-lost glitch. Dark-biased low-opacity static that
+ * flickers gently a few times, then stops — same subtle feel as before, now
+ * covering the whole viewport.
  */
 export function GlitchOverlay({ active }: { active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -15,7 +16,7 @@ export function GlitchOverlay({ active }: { active: boolean }) {
     if (!ctx) return
 
     const W = 240
-    const H = 48
+    const H = 135
     canvas.width = W
     canvas.height = H
 
@@ -45,17 +46,11 @@ export function GlitchOverlay({ active }: { active: boolean }) {
   if (!active) return null
 
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-[58] flex flex-col justify-center gap-2 overflow-hidden"
+    <canvas
+      ref={ref}
+      className="pointer-events-none fixed inset-0 z-[58] h-full w-full opacity-30 mix-blend-screen"
+      style={{ imageRendering: 'pixelated', animation: 'glitch-flicker 0.45s steps(1) infinite' }}
       aria-hidden="true"
-    >
-      <div className="h-[2px] w-full bg-white/25" style={{ animation: 'glitch-flicker 0.35s steps(1) infinite 0.05s' }} />
-      <canvas
-        ref={ref}
-        className="h-[12%] w-full opacity-30 mix-blend-screen"
-        style={{ imageRendering: 'pixelated', animation: 'glitch-flicker 0.45s steps(1) infinite' }}
-      />
-      <div className="h-[2px] w-full bg-cyan-300/20" style={{ animation: 'glitch-flicker 0.3s steps(1) infinite 0.12s' }} />
-    </div>
+    />
   )
 }
