@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MutableRefObject } from 'react'
+import { Suspense, useEffect, useRef, type MutableRefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
@@ -81,7 +81,9 @@ function Scene({
       <Nebula />
       <Belt scrollRef={scrollRef} reduceRef={reduceRef} explosionRef={explosionRef} beltRef={beltRef} />
       <Debris explosionRef={explosionRef} beltRef={beltRef} />
-      <Fragments explosionRef={explosionRef} beltRef={beltRef} />
+      <Suspense fallback={null}>
+        <Fragments explosionRef={explosionRef} beltRef={beltRef} />
+      </Suspense>
       <Shockwave explosionRef={explosionRef} />
       <CameraShake explosionRef={explosionRef} />
       <EffectComposer multisampling={2}>

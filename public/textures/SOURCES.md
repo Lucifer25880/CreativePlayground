@@ -23,4 +23,11 @@ License: CC BY 4.0 — attribution: **Solar System Scope**.
 Source: https://threejs.org/examples/textures/planets/
 Derived from NASA imagery (public domain).
 
+## AmbientCG — CC0
+
+- `rock_color.jpg`, `rock_normal.jpg` (from Rock030, resized to 512×512)
+
+Source: https://ambientcg.com/view?id=Rock030
+License: CC0 (public domain).
+
 If you redistribute this project, keep this attribution note.

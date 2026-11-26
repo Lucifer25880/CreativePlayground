@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useCosmicStore, type ExplosionState } from '@/stores/cosmicStore'
 import { PLANETS } from './planets'
@@ -57,16 +57,30 @@ export function Fragments({
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const phase = useCosmicStore((s) => s.phase)
 
+  const [colorMap, normalMap] = useLoader(THREE.TextureLoader, [
+    '/textures/rock_color.jpg',
+    '/textures/rock_normal.jpg',
+  ])
+  colorMap.colorSpace = THREE.SRGBColorSpace
+  normalMap.colorSpace = THREE.NoColorSpace
+  for (const tex of [colorMap, normalMap]) {
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.set(2, 2)
+  }
+
   const geometry = useMemo(() => makeRockGeometry(3.7), [])
   const material = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        roughness: 0.85,
-        metalness: 0.12,
+        map: colorMap,
+        normalMap,
+        roughness: 0.9,
+        metalness: 0.06,
         flatShading: true,
         side: THREE.DoubleSide,
       }),
-    [],
+    [colorMap, normalMap],
   )
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const color = useMemo(() => new THREE.Color(), [])
@@ -87,7 +101,12 @@ export function Fragments({
     if (!mesh) return
     for (let i = 0; i < TOTAL; i++) {
       const spec = PLANETS[Math.floor(i / PER_PLANET)]
-      color.set(Math.random() < 0.55 ? spec.a : spec.b)
+      const specColor = new THREE.Color(Math.random() < 0.55 ? spec.a : spec.b)
+      color.setRGB(
+        0.55 + specColor.r * 0.45,
+        0.55 + specColor.g * 0.45,
+        0.55 + specColor.b * 0.45,
+      )
       mesh.setColorAt(i, color)
       dummy.position.set(0, 0, 0)
       dummy.scale.setScalar(0)
