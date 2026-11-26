@@ -30,7 +30,7 @@ export default function Home() {
   const featured = listExperiments().slice(0, 4)
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative">
       <CosmicBackground />
       <div className="relative z-10">
         {/* HERO */}
@@ -174,8 +174,24 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* DETONATOR — page bottom */}
+      <section className="mx-auto max-w-7xl px-4 pb-28 sm:px-6">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/10 via-ink-800 to-accent-cyan/10 p-10 text-center">
+          <div className="absolute inset-0 grid-bg opacity-30" />
+          <div className="relative">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">引爆星环</h2>
+            <p className="mt-2 text-sm text-slate-400">把所有行星炸成璀璨碎片，或让它们从深空归来。</p>
+            <div className="mt-7 flex justify-center">
+              <ExplosionButton large />
+            </div>
+          </div>
+        </div>
+      </section>
       </div>
-      <ExplosionButton />
+      <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2">
+        <ExplosionButton />
+      </div>
     </div>
   )
 }
