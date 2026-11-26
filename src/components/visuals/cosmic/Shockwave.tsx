@@ -1,48 +1,38 @@
-import { useRef, type MutableRefObject } from 'react'
+import { useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useCosmicStore, type ExplosionState } from '@/stores/cosmicStore'
+import { shockwaveVertexShader, shockwaveFragmentShader } from './shaders'
 
-/** Two expanding shockwave rings + a bright core flash at the belt centre. */
+/**
+ * A single soft shockwave ring (bright leading edge, fading trail) expanding
+ * across the belt plane, plus a bright core flash.
+ */
 export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<ExplosionState> }) {
-  const ring1Ref = useRef<THREE.Mesh>(null)
-  const ring1Mat = useRef<THREE.MeshBasicMaterial>(null)
-  const ring2Ref = useRef<THREE.Mesh>(null)
-  const ring2Mat = useRef<THREE.MeshBasicMaterial>(null)
   const coreRef = useRef<THREE.Mesh>(null)
   const coreMat = useRef<THREE.MeshBasicMaterial>(null)
   const phase = useCosmicStore((s) => s.phase)
 
+  const uniforms = useMemo(
+    () => ({
+      uProgress: { value: 0 },
+      uColor: { value: new THREE.Color('#ff9a4a') },
+      uOpacity: { value: 0 },
+    }),
+    [],
+  )
+
   useFrame(() => {
     const p = explosionRef.current.progress
 
-    if (ring1Ref.current && ring1Mat.current) {
-      if (phase === 'exploding') {
-        const s = 0.4 + p * 34
-        ring1Ref.current.scale.set(s, s, s)
-        ring1Mat.current.opacity = Math.max(0, 0.95 * (1 - p))
-      } else if (phase === 'rewinding') {
-        const s = 0.4 + p * 34
-        ring1Ref.current.scale.set(s, s, s)
-        ring1Mat.current.opacity = Math.max(0, 0.5 * p)
-      } else {
-        ring1Mat.current.opacity = 0
-      }
-    }
-
-    if (ring2Ref.current && ring2Mat.current) {
-      if (phase === 'exploding') {
-        const p2 = Math.max(0, (p - 0.18) / 0.82)
-        const s = 0.4 + p2 * 26
-        ring2Ref.current.scale.set(s, s, s)
-        ring2Mat.current.opacity = Math.max(0, 0.65 * (1 - p2))
-      } else if (phase === 'rewinding') {
-        const s = 0.4 + p * 26
-        ring2Ref.current.scale.set(s, s, s)
-        ring2Mat.current.opacity = Math.max(0, 0.4 * p)
-      } else {
-        ring2Mat.current.opacity = 0
-      }
+    if (phase === 'exploding') {
+      uniforms.uProgress.value = p
+      uniforms.uOpacity.value = 1
+    } else if (phase === 'rewinding') {
+      uniforms.uProgress.value = p
+      uniforms.uOpacity.value = 0.45
+    } else {
+      uniforms.uOpacity.value = 0
     }
 
     if (coreRef.current && coreMat.current) {
@@ -58,28 +48,16 @@ export function Shockwave({ explosionRef }: { explosionRef: MutableRefObject<Exp
 
   return (
     <>
-      <mesh ref={ring1Ref} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.85, 1, 96]} />
-        <meshBasicMaterial
-          ref={ring1Mat}
-          color="#ffb14a"
+      <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+        <planeGeometry args={[40, 40]} />
+        <shaderMaterial
+          vertexShader={shockwaveVertexShader}
+          fragmentShader={shockwaveFragmentShader}
+          uniforms={uniforms}
           transparent
-          opacity={0}
+          depthWrite={false}
           blending={THREE.AdditiveBlending}
           side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh ref={ring2Ref} rotation={[-Math.PI / 2 + 0.15, 0.3, 0]}>
-        <ringGeometry args={[0.85, 1, 96]} />
-        <meshBasicMaterial
-          ref={ring2Mat}
-          color="#ff6a2a"
-          transparent
-          opacity={0}
-          blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
-          depthWrite={false}
         />
       </mesh>
       <mesh ref={coreRef}>

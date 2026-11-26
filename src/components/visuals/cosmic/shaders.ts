@@ -253,6 +253,34 @@ void main() {
 }
 `
 
+export const shockwaveVertexShader = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`
+
+export const shockwaveFragmentShader = /* glsl */ `
+uniform float uProgress;
+uniform vec3 uColor;
+uniform float uOpacity;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv - 0.5) * 2.0;
+  float r = length(p);
+  float ringR = 0.05 + uProgress * 0.98;
+  float width = 0.05 + uProgress * 0.13;
+  float outer = 1.0 - smoothstep(ringR, ringR + width, r);
+  float inner = smoothstep(ringR - width, ringR, r);
+  float ring = inner * outer;
+  float trail = (1.0 - smoothstep(0.0, ringR, r)) * 0.1;
+  float edge = 1.0 - smoothstep(0.9, 1.0, r);
+  float alpha = (ring + trail) * (1.0 - uProgress) * uOpacity * edge;
+  gl_FragColor = vec4(uColor, alpha);
+}
+`
+
 export const nebulaVertexShader = /* glsl */ `
 varying vec2 vUv;
 void main() {
