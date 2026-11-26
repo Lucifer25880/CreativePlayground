@@ -6,6 +6,7 @@ import { ExperimentCard } from '@/components/cards/ExperimentCard'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { Icon, type IconName } from '@/components/common/Icon'
 import { CosmicBackground } from '@/components/visuals/CosmicBackground'
+import { ExplosionButton } from '@/components/visuals/ExplosionButton'
 import { useInView } from '@/hooks/useInView'
 
 
@@ -174,6 +175,7 @@ export default function Home() {
         </div>
       </section>
       </div>
+      <ExplosionButton />
     </div>
   )
 }

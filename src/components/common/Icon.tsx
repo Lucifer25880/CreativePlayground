@@ -42,6 +42,7 @@ export type IconName =
   | 'refresh'
   | 'compare'
   | 'sliders'
+  | 'explosion'
 
 const PATHS: Record<IconName, JSX.Element> = {
   home: (
@@ -272,6 +273,12 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
       <path d="M2 14h4M10 8h4M18 16h4" />
+    </>
+  ),
+  explosion: (
+    <>
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
+      <circle cx="12" cy="12" r="3.2" />
     </>
   ),
 }
