@@ -65,7 +65,8 @@ function Scene({
   beltRef: MutableRefObject<THREE.Group | null>
 }) {
   const phase = useCosmicStore((s) => s.phase)
-  const bloomIntensity = phase === 'exploding' ? 2.6 : phase === 'rewinding' ? 1.5 : 1.05
+  const bloomIntensity =
+    phase === 'exploding' ? 2.6 : phase === 'exploded' ? 1.9 : phase === 'rewinding' ? 1.5 : 1.05
 
   return (
     <>

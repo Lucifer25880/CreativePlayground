@@ -87,6 +87,8 @@ export function Fragments({
             metalness: 0.05,
             flatShading: true,
             side: THREE.DoubleSide,
+            emissive: '#ff6a1a',
+            emissiveIntensity: 0,
           }),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,10 +181,13 @@ export function Fragments({
   useFrame((_s, dt) => {
     const st = stateRef.current
 
-    // Shards fly out during the explosion, then dissipate once it finishes.
+    // Shards fly out during the explosion, then burn away in a quick fire flash.
     if (st.active && (phase === 'exploded' || phase === 'rewinding')) {
-      st.fade = Math.max(0, st.fade - dt / 1.2)
+      st.fade = Math.max(0, st.fade - dt / 0.35)
       if (st.fade <= 0) st.active = false
+    }
+    for (const m of materials) {
+      m.emissiveIntensity = st.active ? (1 - st.fade) * 2.8 : 0
     }
     if (!st.active && st.fade <= 0) return
 

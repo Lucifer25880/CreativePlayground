@@ -44,9 +44,9 @@ export default function Home() {
     }
   }, [phase, arming])
 
-  // Brief warm fire flash at the moment of detonation.
+  // Brief warm fire flash at detonation and again when the shards burn away.
   useEffect(() => {
-    if (phase === 'exploding') {
+    if (phase === 'exploding' || phase === 'exploded') {
       setFlash(true)
       const t = setTimeout(() => setFlash(false), 90)
       return () => clearTimeout(t)
