@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { listExperiments, getExperiment, getExperimentComponents } from '@/experiments/registry/registry'
@@ -31,13 +31,17 @@ const FLOW: { icon: IconName; label: string; desc: string }[] = [
 export default function Home() {
   const featured = listExperiments().slice(0, 4)
   const phase = useCosmicStore((s) => s.phase)
-  const [contentVisible, setContentVisible] = useState(true)
+  const [contentVisible, setContentVisible] = useState(
+    () => useCosmicStore.getState().phase === 'idle',
+  )
   const [flash, setFlash] = useState(false)
   const [arming, setArming] = useState(false)
+  const prevPhaseRef = useRef(phase)
+  const armingTimer = useRef<number | null>(null)
 
-  // Hide content during explode / rewind; restore 1s after rewind finishes.
+  // Hide content during explode / exploded / rewind; restore 1s after the scene is back.
   useEffect(() => {
-    if (phase === 'exploding' || phase === 'rewinding') {
+    if (phase === 'exploding' || phase === 'rewinding' || phase === 'exploded') {
       setContentVisible(false)
     } else if (phase === 'idle' && !arming) {
       const t = setTimeout(() => setContentVisible(true), 1000)
@@ -45,8 +49,11 @@ export default function Home() {
     }
   }, [phase, arming])
 
-  // Brief warm fire flash at detonation and again when the shards burn away.
+  // Warm flash ONLY on an actual phase transition (never on mount).
   useEffect(() => {
+    const prev = prevPhaseRef.current
+    prevPhaseRef.current = phase
+    if (prev === phase) return
     if (phase === 'exploding' || phase === 'exploded') {
       setFlash(true)
       const t = setTimeout(() => setFlash(false), 90)
@@ -62,12 +69,21 @@ export default function Home() {
     }
   }, [phase])
 
+  // Reset the cosmic scene to idle when leaving Home so a return never replays
+  // a stale explosion or shows content on top of the fire flash.
+  useEffect(() => {
+    return () => {
+      if (armingTimer.current) window.clearTimeout(armingTimer.current)
+      useCosmicStore.getState().setPhase('idle')
+    }
+  }, [])
+
   // Fade the content out FIRST, then detonate so nothing blocks the explosion.
   const handleExplode = () => {
     if (arming || phase !== 'idle') return
     setContentVisible(false)
     setArming(true)
-    setTimeout(() => {
+    armingTimer.current = window.setTimeout(() => {
       useCosmicStore.getState().explode()
       setArming(false)
     }, 600)
