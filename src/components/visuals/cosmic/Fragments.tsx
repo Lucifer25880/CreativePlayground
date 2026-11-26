@@ -179,8 +179,10 @@ export function Fragments({
     const mesh = meshRef.current
     if (!mesh) return
 
-    if (phase === 'rewinding' && st.active) {
-      st.fade = Math.max(0, st.fade - dt / 1.6)
+    // Shards fly out during the explosion, then dissipate once it finishes.
+    if (st.active && (phase === 'exploded' || phase === 'rewinding')) {
+      st.fade = Math.max(0, st.fade - dt / 1.2)
+      if (st.fade <= 0) st.active = false
     }
     if (!st.active && st.fade <= 0) return
 
