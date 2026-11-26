@@ -5,9 +5,11 @@ import { useCosmicStore, type ExplosionState } from '@/stores/cosmicStore'
 import { PLANETS } from './planets'
 
 const PER_PLANET = 32
-const TOTAL = PLANETS.length * PER_PLANET
 const BELT_RADIUS = 8.6
 const TAU = Math.PI * 2
+
+// One rock surface normal map + each planet's own surface texture.
+const LOAD_URLS = [...PLANETS.map((p) => p.texture), '/textures/rock_normal.jpg']
 
 /** Deterministic 0..1 hash so duplicated (shared) vertices displace identically. */
 function hash3(x: number, y: number, z: number, seed: number): number {
@@ -41,11 +43,20 @@ function makeRockGeometry(seed: number): THREE.BufferGeometry {
   return geo
 }
 
+interface FragState {
+  active: boolean
+  fade: number
+  pos: Float32Array
+  vel: Float32Array
+  rot: Float32Array
+  rotVel: Float32Array
+  scale: Float32Array
+}
+
 /**
- * Large, lit, tumbling planet shards.
- * - Spawn on each planet's shell so the planet visibly breaks apart into chunks.
- * - Keep drifting in space after the explosion (they persist).
- * - Fade away only while the belt rewinds.
+ * Planet shards. Each planet gets its OWN instanced mesh whose material uses
+ * that planet's surface texture — so the chunks visibly belong to that planet
+ * (Earth blue/green, Mars red, Jupiter bands, Saturn gold, ...).
  */
 export function Fragments({
   explosionRef,
@@ -54,75 +65,68 @@ export function Fragments({
   explosionRef: MutableRefObject<ExplosionState>
   beltRef: MutableRefObject<THREE.Group | null>
 }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null)
+  const meshes = useRef<(THREE.InstancedMesh | null)[]>([])
   const phase = useCosmicStore((s) => s.phase)
 
-  const [colorMap, normalMap] = useLoader(THREE.TextureLoader, [
-    '/textures/rock_color.jpg',
-    '/textures/rock_normal.jpg',
-  ])
-  colorMap.colorSpace = THREE.SRGBColorSpace
-  normalMap.colorSpace = THREE.NoColorSpace
-  for (const tex of [colorMap, normalMap]) {
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(2, 2)
-  }
-
-  const geometry = useMemo(() => makeRockGeometry(3.7), [])
-  const material = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map: colorMap,
-        normalMap,
-        roughness: 0.9,
-        metalness: 0.06,
-        flatShading: true,
-        side: THREE.DoubleSide,
-      }),
-    [colorMap, normalMap],
-  )
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const color = useMemo(() => new THREE.Color(), [])
-
-  const stateRef = useRef({
-    active: false,
-    fade: 0,
-    pos: new Float32Array(TOTAL * 3),
-    vel: new Float32Array(TOTAL * 3),
-    rot: new Float32Array(TOTAL * 3),
-    rotVel: new Float32Array(TOTAL * 3),
-    scale: new Float32Array(TOTAL * 3),
+  const textures = useLoader(THREE.TextureLoader, LOAD_URLS)
+  const planetTextures = textures.slice(0, PLANETS.length) as THREE.Texture[]
+  const rockNormal = textures[PLANETS.length] as THREE.Texture
+  rockNormal.colorSpace = THREE.NoColorSpace
+  planetTextures.forEach((t) => {
+    t.colorSpace = THREE.SRGBColorSpace
   })
 
-  // Initialise instance colours + hide everything.
-  useEffect(() => {
-    const mesh = meshRef.current
-    if (!mesh) return
-    for (let i = 0; i < TOTAL; i++) {
-      const spec = PLANETS[Math.floor(i / PER_PLANET)]
-      const specColor = new THREE.Color(Math.random() < 0.55 ? spec.a : spec.b)
-      color.setRGB(
-        0.55 + specColor.r * 0.45,
-        0.55 + specColor.g * 0.45,
-        0.55 + specColor.b * 0.45,
-      )
-      mesh.setColorAt(i, color)
-      dummy.position.set(0, 0, 0)
-      dummy.scale.setScalar(0)
-      dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
-    }
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-    mesh.instanceMatrix.needsUpdate = true
-  }, [dummy, color])
+  const materials = useMemo(
+    () =>
+      planetTextures.map(
+        (tex) =>
+          new THREE.MeshStandardMaterial({
+            map: tex,
+            normalMap: rockNormal,
+            roughness: 0.9,
+            metalness: 0.05,
+            flatShading: true,
+            side: THREE.DoubleSide,
+          }),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [textures],
+  )
+
+  const geometry = useMemo(() => makeRockGeometry(3.7), [])
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+
+  const stateRef = useRef<FragState>({
+    active: false,
+    fade: 0,
+    pos: new Float32Array(PLANETS.length * PER_PLANET * 3),
+    vel: new Float32Array(PLANETS.length * PER_PLANET * 3),
+    rot: new Float32Array(PLANETS.length * PER_PLANET * 3),
+    rotVel: new Float32Array(PLANETS.length * PER_PLANET * 3),
+    scale: new Float32Array(PLANETS.length * PER_PLANET * 3),
+  })
 
   useEffect(() => {
     return () => {
       geometry.dispose()
-      material.dispose()
+      materials.forEach((m) => m.dispose())
     }
-  }, [geometry, material])
+  }, [geometry, materials])
+
+  // Hide all instances on mount.
+  useEffect(() => {
+    for (let pi = 0; pi < PLANETS.length; pi++) {
+      const mesh = meshes.current[pi]
+      if (!mesh) continue
+      for (let k = 0; k < PER_PLANET; k++) {
+        dummy.position.set(0, 0, 0)
+        dummy.scale.setScalar(0)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(k, dummy.matrix)
+      }
+      mesh.instanceMatrix.needsUpdate = true
+    }
+  }, [dummy])
 
   useEffect(() => {
     if (phase === 'exploding') {
@@ -136,7 +140,6 @@ export function Fragments({
 
         for (let k = 0; k < PER_PLANET; k++) {
           const i = pi * PER_PLANET + k
-          // spawn on the planet's shell
           const theta = Math.random() * TAU
           const phi = Math.acos(2 * Math.random() - 1)
           const nx = Math.sin(phi) * Math.cos(theta)
@@ -147,7 +150,6 @@ export function Fragments({
           st.pos[i * 3 + 1] = ny * rr
           st.pos[i * 3 + 2] = cz + nz * rr
 
-          // burst outward from the planet centre
           const speed = 1.4 + Math.random() * 3.4
           st.vel[i * 3] = (nx * 0.8 + (Math.random() - 0.5) * 0.5) * speed
           st.vel[i * 3 + 1] = (ny * 0.8 + (Math.random() - 0.5) * 0.5) * speed
@@ -176,8 +178,6 @@ export function Fragments({
 
   useFrame((_s, dt) => {
     const st = stateRef.current
-    const mesh = meshRef.current
-    if (!mesh) return
 
     // Shards fly out during the explosion, then dissipate once it finishes.
     if (st.active && (phase === 'exploded' || phase === 'rewinding')) {
@@ -187,27 +187,45 @@ export function Fragments({
     if (!st.active && st.fade <= 0) return
 
     const d = Math.min(0.05, dt)
-    for (let i = 0; i < TOTAL; i++) {
-      if (st.active) {
-        st.pos[i * 3] += st.vel[i * 3] * d
-        st.pos[i * 3 + 1] += st.vel[i * 3 + 1] * d
-        st.pos[i * 3 + 2] += st.vel[i * 3 + 2] * d
-        st.vel[i * 3] *= 0.985
-        st.vel[i * 3 + 1] *= 0.985
-        st.vel[i * 3 + 2] *= 0.985
-        st.rot[i * 3] += st.rotVel[i * 3] * d
-        st.rot[i * 3 + 1] += st.rotVel[i * 3 + 1] * d
-        st.rot[i * 3 + 2] += st.rotVel[i * 3 + 2] * d
+    for (let pi = 0; pi < PLANETS.length; pi++) {
+      const mesh = meshes.current[pi]
+      if (!mesh) continue
+      for (let k = 0; k < PER_PLANET; k++) {
+        const i = pi * PER_PLANET + k
+        if (st.active) {
+          st.pos[i * 3] += st.vel[i * 3] * d
+          st.pos[i * 3 + 1] += st.vel[i * 3 + 1] * d
+          st.pos[i * 3 + 2] += st.vel[i * 3 + 2] * d
+          st.vel[i * 3] *= 0.985
+          st.vel[i * 3 + 1] *= 0.985
+          st.vel[i * 3 + 2] *= 0.985
+          st.rot[i * 3] += st.rotVel[i * 3] * d
+          st.rot[i * 3 + 1] += st.rotVel[i * 3 + 1] * d
+          st.rot[i * 3 + 2] += st.rotVel[i * 3 + 2] * d
+        }
+        const f = st.active ? st.fade : 0
+        dummy.position.set(st.pos[i * 3], st.pos[i * 3 + 1], st.pos[i * 3 + 2])
+        dummy.rotation.set(st.rot[i * 3], st.rot[i * 3 + 1], st.rot[i * 3 + 2])
+        dummy.scale.set(st.scale[i * 3] * f, st.scale[i * 3 + 1] * f, st.scale[i * 3 + 2] * f)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(k, dummy.matrix)
       }
-      const f = st.active ? st.fade : 0
-      dummy.position.set(st.pos[i * 3], st.pos[i * 3 + 1], st.pos[i * 3 + 2])
-      dummy.rotation.set(st.rot[i * 3], st.rot[i * 3 + 1], st.rot[i * 3 + 2])
-      dummy.scale.set(st.scale[i * 3] * f, st.scale[i * 3 + 1] * f, st.scale[i * 3 + 2] * f)
-      dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
+      mesh.instanceMatrix.needsUpdate = true
     }
-    mesh.instanceMatrix.needsUpdate = true
   })
 
-  return <instancedMesh ref={meshRef} args={[geometry, material, TOTAL]} frustumCulled={false} />
+  return (
+    <>
+      {PLANETS.map((spec, pi) => (
+        <instancedMesh
+          key={spec.name}
+          ref={(el) => {
+            meshes.current[pi] = el
+          }}
+          args={[geometry, materials[pi], PER_PLANET]}
+          frustumCulled={false}
+        />
+      ))}
+    </>
+  )
 }
